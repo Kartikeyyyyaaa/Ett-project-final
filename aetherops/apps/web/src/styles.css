@@ -1,16 +1,22 @@
 :root {
+  /* Layout & Backgrounds */
   --bg-deep: #070a12;
   --bg-panel: rgba(14, 22, 38, 0.85);
   --border: rgba(94, 234, 212, 0.15);
+  
+  /* Branding & Status Colors */
   --accent: #5eead4;
   --accent-dim: rgba(94, 234, 212, 0.35);
   --danger: #f87171;
   --warn: #fbbf24;
+  
+  /* Typography Variables */
   --text: #e8edf5;
   --muted: #8b9bb4;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: "DM Sans", system-ui, sans-serif;
 }
+
 
 * {
   box-sizing: border-box;
