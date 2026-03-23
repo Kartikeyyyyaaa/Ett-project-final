@@ -1,0 +1,59 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  edge-gateway:
+    build:
+      context: ../services/edge-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "8088:80"
+    depends_on:
+      - edge-gateway
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - edge-gateway
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=aetherops
+      - GF_USERS_DEFAULT_THEME=dark
+      # SQLite on Docker Desktop (macOS/Windows) can hit "database is locked"; limit connections.
+      - GF_DATABASE_MAX_OPEN_CONN=1
+      - GF_DATABASE_MAX_IDLE_CONN=1
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana-data:

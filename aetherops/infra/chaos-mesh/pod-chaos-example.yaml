@@ -1,0 +1,16 @@
+# Requires Chaos Mesh installed: https://chaos-mesh.org/
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: aetherops-kill-edge-pod
+  namespace: aetherops
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces:
+      - aetherops
+    labelSelectors:
+      app: aetherops-edge-gateway
+  scheduler:
+    cron: "@every 5m"

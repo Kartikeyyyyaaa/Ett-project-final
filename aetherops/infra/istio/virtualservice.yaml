@@ -1,0 +1,59 @@
+# Apply after Istio is installed and sidecars are injected.
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: aetherops-gateway
+  namespace: aetherops
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: aetherops-web
+  namespace: aetherops
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - aetherops-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api
+      route:
+        - destination:
+            host: aetherops-edge-gateway
+            port:
+              number: 8080
+    - route:
+        - destination:
+            host: aetherops-web
+            port:
+              number: 80
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: aetherops-edge-gateway
+  namespace: aetherops
+spec:
+  host: aetherops-edge-gateway
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 5s
+      baseEjectionTime: 30s

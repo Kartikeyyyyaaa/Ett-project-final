@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aetherops
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_ORG/aetherops.git
+    targetRevision: main
+    path: infra/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: aetherops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

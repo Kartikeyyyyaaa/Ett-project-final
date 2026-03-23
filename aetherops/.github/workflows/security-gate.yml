@@ -1,0 +1,23 @@
+# Presentation: intentionally vulnerable image should fail this workflow when pushed.
+name: Security gate
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "examples/insecure-image/**"
+
+jobs:
+  block-vulnerable-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build demo insecure image
+        run: docker build -t aetherops-insecure:demo ./examples/insecure-image
+      - name: Trivy fails on critical CVEs
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: aetherops-insecure:demo
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
