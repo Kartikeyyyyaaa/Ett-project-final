@@ -65,18 +65,21 @@ def _sync_metrics() -> None:
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Retrieve the baseline health status of the orchestrator API."""
     REQUESTS.labels(path="/health").inc()
     return {"status": "ok", "service": "aetherops-edge-gateway"}
 
 
 @app.get("/api/v1/pods")
 def list_pods() -> dict[str, Any]:
+    """List all deployed pods across the edge environment alongside their simulated statuses."""
     REQUESTS.labels(path="/api/v1/pods").inc()
     return {"pods": [asdict(p) for p in _pods.values()]}
 
 
 @app.post("/api/v1/pods/{name}/fail")
 def fail_pod(name: str) -> dict[str, str]:
+    """Force a specific pod into a Failed state to demonstrate self-healing reconciliation."""
     REQUESTS.labels(path="/api/v1/pods/fail").inc()
     if name in _pods:
         _pods[name].status = "Failed"
@@ -86,6 +89,7 @@ def fail_pod(name: str) -> dict[str, str]:
 
 @app.post("/api/v1/pods/{name}/recover")
 def recover_pod(name: str) -> dict[str, str]:
+    """Manually recover a pod or toggle its status directly back to Running phase."""
     REQUESTS.labels(path="/api/v1/pods/recover").inc()
     if name in _pods:
         _pods[name].status = "Running"
@@ -99,6 +103,7 @@ class CpuSim(BaseModel):
 
 @app.post("/api/v1/simulate/cpu")
 def simulate_cpu(body: CpuSim) -> dict[str, float]:
+    """Override the global simulated CPU load metric which triggers Horizontal Pod Autoscaling."""
     global _sim_load
     REQUESTS.labels(path="/api/v1/simulate/cpu").inc()
     _sim_load = body.load
@@ -108,6 +113,7 @@ def simulate_cpu(body: CpuSim) -> dict[str, float]:
 
 @app.get("/metrics")
 def metrics() -> Response:
+    """Expose Prometheus system and custom edge metrics directly for scraping instances."""
     REQUESTS.labels(path="/metrics").inc()
     _sync_metrics()
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
