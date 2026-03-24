@@ -1,3 +1,6 @@
+/**
+ * Represents the simulated state of a Kubernetes pod within the application.
+ */
 export type PodState = {
   name: string;
   namespace: string;
@@ -7,6 +10,11 @@ export type PodState = {
 
 const base = "";
 
+/**
+ * Fetches the current list of pods and their health statuses from the backend.
+ * @returns {Promise<PodState[]>} An array of active or failed pod objects.
+ * @throws {Error} Throws an error if the network request fails or API is unreachable.
+ */
 export async function fetchPods(): Promise<PodState[]> {
   const res = await fetch(`${base}/api/v1/pods`);
   if (!res.ok) throw new Error("pods");
@@ -14,6 +22,11 @@ export async function fetchPods(): Promise<PodState[]> {
   return data.pods;
 }
 
+/**
+ * Sends a simulated CPU load value to the orchestrator to trigger autoscaling scaling policies.
+ * @param {number} load - A decimal value ranging from 0.0 to 1.0 representing CPU stress.
+ * @returns {Promise<void>} Resolves when the value is successfully posted.
+ */
 export async function simulateCpuLoad(load: number): Promise<void> {
   await fetch(`${base}/api/v1/simulate/cpu`, {
     method: "POST",
@@ -22,8 +35,14 @@ export async function simulateCpuLoad(load: number): Promise<void> {
   });
 }
 
+/**
+ * Forces a specific pod state to transition to "Failed", demonstrating self-healing behaviors.
+ * @param {string} name - The string identifier of the pod (e.g. 'aetherops-worker').
+ * @returns {Promise<void>} Resolves when the failure state is successfully toggled.
+ */
 export async function failPod(name: string): Promise<void> {
   await fetch(`${base}/api/v1/pods/${encodeURIComponent(name)}/fail`, {
     method: "POST",
   });
 }
+
