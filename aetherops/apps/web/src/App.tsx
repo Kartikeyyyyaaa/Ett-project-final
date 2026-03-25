@@ -11,6 +11,7 @@ export function App() {
   const [pods, setPods] = useState<PodState[]>([]);
   const [edgeConnected, setEdgeConnected] = useState(false);
   const [cpuLoad, setCpuLoad] = useState(0.12);
+  const [showArch, setShowArch] = useState(false);
 
   const refreshPods = useCallback(async () => {
     try {
@@ -39,6 +40,17 @@ export function App() {
     Math.max(1, Math.ceil(cpuLoad * 2.2))
   );
 
+  const [prevReplicas, setPrevReplicas] = useState(workerReplicas);
+  const [replicaAnim, setReplicaAnim] = useState(false);
+  useEffect(() => {
+    if (workerReplicas !== prevReplicas) {
+      setReplicaAnim(true);
+      const timer = setTimeout(() => setReplicaAnim(false), 400);
+      setPrevReplicas(workerReplicas);
+      return () => clearTimeout(timer);
+    }
+  }, [workerReplicas, prevReplicas]);
+
   const handleResolutionChange = useCallback(
     async (load: number) => {
       setCpuLoad(load);
@@ -51,8 +63,28 @@ export function App() {
     []
   );
 
+  if (pods.length === 0 && !edgeConnected) {
+    return (
+      <div className={`app-shell ${theme}`} style={{ alignItems: "center", justifyContent: "center" }}>
+        <h2 style={{ color: "var(--accent)", fontFamily: "var(--mono)", animation: "warnFlash 1.5s infinite alternate" }}>Waking up Edge Orchestrator...</h2>
+      </div>
+    );
+  }
+
   return (
-    <div className={`app-shell ${theme}`}>
+    <div className={`app-shell ${theme} ${cpuLoad > 0.85 ? "danger-flash" : ""}`}>
+      {showArch && (
+        <div onClick={() => setShowArch(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center'}}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'var(--bg-panel)', padding:'2rem', borderRadius:'14px', maxWidth:'500px', border:'1px solid var(--border)'}}>
+            <h3>AetherOps Architecture</h3>
+            <p><strong>Cloud Layer:</strong> EKS / GKE central management planes.</p>
+            <p><strong>Edge Layer:</strong> K3s clusters running close to data sources.</p>
+            <p><strong>Message Bus:</strong> NATS embedded JetStream for real-time state sync.</p>
+            <p><strong>Orchestration:</strong> React (Client) ↔ FastAPI (Edge API) ↔ Pods.</p>
+            <button className="btn" style={{ marginTop: '1rem' }} onClick={() => setShowArch(false)}>Close</button>
+          </div>
+        </div>
+      )}
       <header className="app-header">
         <div className="brand">
           <div className="brand-mark" aria-hidden />
@@ -68,6 +100,15 @@ export function App() {
           >
             {edgeConnected ? "EDGE LINK ✓" : "EDGE OFFLINE (demo)"}
           </span>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setShowArch(true)}
+            aria-label="View architecture"
+            style={{ marginRight: '0.2rem' }}
+          >
+            ℹ️ Info
+          </button>
           <button
             type="button"
             className="theme-toggle"
@@ -122,21 +163,21 @@ export function App() {
         </section>
 
         <div className="metrics-row">
-          <div className="metric-card">
+          <div className="metric-card" title="Simulated metric causing the orchestrator to scale the worker deployment.">
             <h3>Simulated CPU (edge)</h3>
-            <div className="metric-value">{(cpuLoad * 100).toFixed(0)}%</div>
+            <div className={`metric-value ${cpuLoad > 0.85 ? "danger-flash" : ""}`}>{(cpuLoad * 100).toFixed(0)}%</div>
             <div className="metric-sub">
               Raise resolution to spike load — HPA scales workers
             </div>
           </div>
-          <div className="metric-card">
+          <div className="metric-card" title="Actively managed Horizontal Pod Autoscaling (HPA) replica instances.">
             <h3>Worker replicas</h3>
-            <div className="metric-value">{workerReplicas}</div>
+            <div className={`metric-value ${replicaAnim ? "replica-anim" : ""}`}>{workerReplicas}</div>
             <div className="metric-sub">
               Auto-scaled when load &gt; 75% (demo heuristic)
             </div>
           </div>
-          <div className="metric-card">
+          <div className="metric-card" title="Live status check of the internal Kubernetes clusters running our microservices.">
             <h3>Pod health</h3>
             <div className="metric-value">
               {summary.total - summary.failed}/{summary.total}
