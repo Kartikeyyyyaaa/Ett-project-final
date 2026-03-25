@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 import { PodState } from "../lib/api";
 
 type PodSlot = {
@@ -28,13 +30,25 @@ function PodLight({
   const color = standby ? "#64748b" : ok ? "#34d399" : "#f87171";
   const emissive = standby ? "#1e293b" : ok ? "#064e3b" : "#7f1d1d";
 
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  useFrame((state) => {
+    if (matRef.current) {
+      if (ok && !standby) {
+        matRef.current.emissiveIntensity = 0.9 + Math.sin(state.clock.elapsedTime * 4) * 0.3;
+      } else {
+        matRef.current.emissiveIntensity = standby ? 0.35 : 2.2;
+      }
+    }
+  });
+
   return (
     <mesh position={[0, 0, 0.06]} castShadow>
       <sphereGeometry args={[0.08, 16, 16]} />
       <meshStandardMaterial
+        ref={matRef}
         color={color}
         emissive={emissive}
-        emissiveIntensity={standby ? 0.35 : ok ? 0.9 : 2.2}
         metalness={0.2}
         roughness={0.35}
       />
