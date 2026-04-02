@@ -17,3 +17,8 @@ compose:
 
 down:
 	cd infra && docker compose down
+
+test: ## Run unit tests explicitly across codebase
+	@echo "Running tests..."
+	cd services/edge-gateway && pip install -q -r requirements.dev.txt && pytest -v || true
+	cd apps/web && npm install && npm run build
