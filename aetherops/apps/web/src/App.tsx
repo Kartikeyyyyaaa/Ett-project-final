@@ -1,10 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, Suspense, Component, lazy } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
-import { ServerRackScene } from "./components/ServerRackScene";
 import { LiveInference } from "./components/LiveInference";
 import { useTheme } from "./hooks/useTheme";
 import { PodState, fetchPods, simulateCpuLoad } from "./lib/api";
+
+const ServerRackScene = lazy(() => import("./components/ServerRackScene").then(m => ({ default: m.ServerRackScene })));
+
+class ErrorBoundary extends Component<{children: React.ReactNode}, {hasError: boolean}> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return <div style={{color:'red', padding:'2rem'}}>3D Context Lost. Refresh.</div>;
+    return this.props.children;
+  }
+}
 
 export function App() {
   const { theme, toggleTheme } = useTheme();
@@ -51,17 +61,18 @@ export function App() {
     }
   }, [workerReplicas, prevReplicas]);
 
-  const handleResolutionChange = useCallback(
-    async (load: number) => {
-      setCpuLoad(load);
-      try {
-        await simulateCpuLoad(load);
-      } catch {
-        /* offline demo */
-      }
-    },
-    []
-  );
+  const [debouncedLoad, setDebouncedLoad] = useState(0.12);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      simulateCpuLoad(debouncedLoad).catch(()=>{});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [debouncedLoad]);
+
+  const handleResolutionChange = useCallback((load: number) => {
+    setCpuLoad(load);
+    setDebouncedLoad(load);
+  }, []);
 
   if (pods.length === 0 && !edgeConnected) {
     return (
@@ -131,24 +142,28 @@ export function App() {
             </small>
           </div>
           <div className="panel-body">
-            <Canvas camera={{ position: [4.2, 2.6, 5.2], fov: 45 }}>
-              <color attach="background" args={["#020617"]} />
-              <ambientLight intensity={0.35} />
-              <spotLight
-                position={[6, 8, 4]}
-                angle={0.35}
-                penumbra={0.6}
-                intensity={1.2}
-                castShadow
-              />
-              <ServerRackScene pods={pods} />
-              <Environment preset="city" />
-              <OrbitControls
-                enablePan
-                minPolarAngle={0.35}
-                maxPolarAngle={Math.PI / 2.05}
-              />
-            </Canvas>
+            <ErrorBoundary>
+              <Canvas camera={{ position: [4.2, 2.6, 5.2], fov: 45 }} dpr={[1, 2]}>
+                <Suspense fallback={null}>
+                  <color attach="background" args={["#020617"]} />
+                  <ambientLight intensity={0.35} />
+                  <spotLight
+                    position={[6, 8, 4]}
+                    angle={0.35}
+                    penumbra={0.6}
+                    intensity={1.2}
+                    castShadow
+                  />
+                  <ServerRackScene pods={pods} />
+                  <Environment preset="city" />
+                  <OrbitControls
+                    enablePan
+                    minPolarAngle={0.35}
+                    maxPolarAngle={Math.PI / 2.05}
+                  />
+                </Suspense>
+              </Canvas>
+            </ErrorBoundary>
           </div>
         </section>
 
