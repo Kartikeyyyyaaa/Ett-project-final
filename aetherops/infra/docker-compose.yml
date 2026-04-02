@@ -5,6 +5,11 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/varz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   edge-gateway:
     build:
@@ -54,6 +59,11 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
-
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    
 volumes:
   grafana-data:
