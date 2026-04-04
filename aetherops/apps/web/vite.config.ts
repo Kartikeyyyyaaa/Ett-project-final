@@ -5,6 +5,16 @@ const apiPort = process.env.AETHEROPS_API_PORT ?? "8081";
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three', '@react-three/fiber', '@react-three/drei'],
+          tfjs: ['@tensorflow/tfjs', '@tensorflow-models/coco-ssd']
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     proxy: {
