@@ -1,4 +1,4 @@
-# AetherOps
+# AetherOps (v1.0.0 Production Release)
 
 **AetherOps** is a demo-oriented **multi-cloud edge AI orchestrator**: lightweight Kubernetes at the edge (K3s), central clusters (EKS/GKE patterns), **Istio** for traffic and service graphs, **NATS** (with Kafka as an alternative) for event streaming, **Chaos Mesh** for resilience demos, and **Argo CD** for GitOps.
 
